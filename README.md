@@ -16,7 +16,7 @@ A re-creation of the well known title Rocket League, but on a much smaller scale
 
 # Video
 
-[<img src="./assets/Screenshot.png" width="100%">](https://streamable.com/bzmbr)
+[<img src="./assets/Screenshot-1.PNG" width="100%">](https://streamable.com/bzmbr)
 
 # Screenshots
 
@@ -24,19 +24,19 @@ A re-creation of the well known title Rocket League, but on a much smaller scale
 
 ### Default Renderer
 
-<img src="./assets/Screenshot-1.png" width="50%" alt="Default Render" />
+<img src="./assets/Screenshot-1.PNG" width="50%" alt="Default Render" />
 
 ### Wireframe Renderer
 
-<img src="./assets/Screenshot-2.png" width="50%" alt="Wireframe Render" />
+<img src="./assets/Screenshot-2.PNG" width="50%" alt="Wireframe Render" />
 
 ### Transparency Renderer
 
-<img src="./assets/Screenshot-3.png" width="50%" alt="Transparency Render" />
+<img src="./assets/Screenshot-3.PNG" width="50%" alt="Transparency Render" />
 
 ### Wireframe Renderer + Transparency Renderer
 
-<img src="./assets/Screenshot-4.png" width="50%" alt="Default Render" />
+<img src="./assets/Screenshot-4.PNG" width="50%" alt="Default Render" />
 
 </div>
 
