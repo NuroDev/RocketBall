@@ -18,6 +18,28 @@ A re-creation of the well known title Rocket League, but on a much smaller scale
 
 [<img src="./assets/Screenshot.png" width="100%">](https://streamable.com/bzmbr)
 
+# Screenshots
+
+<div align="center">
+
+### Default Renderer
+
+<img src="./assets/Screenshot-1.png" width="50%" alt="Default Render" />
+
+### Wireframe Renderer
+
+<img src="./assets/Screenshot-2.png" width="50%" alt="Wireframe Render" />
+
+### Transparency Renderer
+
+<img src="./assets/Screenshot-3.png" width="50%" alt="Transparency Render" />
+
+### Wireframe Renderer + Transparency Renderer
+
+<img src="./assets/Screenshot-4.png" width="50%" alt="Default Render" />
+
+</div>
+
 ## License
 
 MIT
