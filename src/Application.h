@@ -1,140 +1,108 @@
 #pragma once
 
-#include <windows.h>
 #include <d3dcompiler.h>
 #include <directxcolors.h>
-
-#include "lib\Camera.h"
-#include "lib/DDSTextureLoader.h"
-#include "lib\Transform.h"
-#include "lib\OBJLoader.h"
-#include "../resource.h"
-
 #include <vector>
+#include <windows.h>
+
+#include "../resource.h"
+#include "Camera.h"
 #include "GameObject.h"
+#include "lib/DDSTextureLoader.h"
+#include "lib/OBJLoader.h"
+#include "util/Transform.h"
 
 using namespace DirectX;
 
-struct SurfaceInfo
-{
-	XMFLOAT4 AmbientMtrl;
-	XMFLOAT4 DiffuseMtrl;
-	XMFLOAT4 SpecularMtrl;
-};
-
-struct Light
-{
-	XMFLOAT4 AmbientLight;
-	XMFLOAT4 DiffuseLight;
-	XMFLOAT4 SpecularLight;
-
-	float SpecularPower;
-	Vector3 LightVecW;
-};
-
-struct ConstantBuffer
-{
-	XMMATRIX World;
-	XMMATRIX View;
-	XMMATRIX Projection;
-
-	SurfaceInfo surface;
-	Light light;
-
-	Vector3 EyePosW;
-	float HasTexture;
-};
-
 class Application
 {
-	public:
-		Application();
-		~Application();
+public:
+	Application();
+	~Application() { Release(); };
 
-		HRESULT Initialise(HINSTANCE hInstance, int nCmdShow);
+	HRESULT Initialise(HINSTANCE hInstance, int nCmdShow);
 
-		bool HandleKeyboard(MSG msg);
+	bool HandleKeyboard(MSG msg);
 
-		void Update();
-		void Draw();
+	void Update();
+	void Draw();
 
-	private:
-		HINSTANCE _hInst;
-		HWND _hWnd;
-		D3D_DRIVER_TYPE _driverType;
-		D3D_FEATURE_LEVEL _featureLevel;
-		ID3D11Device* _pd3dDevice;
-		ID3D11DeviceContext* _pImmediateContext;
-		IDXGISwapChain* _pSwapChain;
-		ID3D11RenderTargetView* _pRenderTargetView;
-		ID3D11VertexShader* _pVertexShader;
-		ID3D11PixelShader* _pPixelShader;
-		ID3D11InputLayout* _pVertexLayout;
+private:
+	Geometry InitGeometry(ID3D11Buffer *indexBuffer, ID3D11Buffer *vertexBuffer, int numIndices, int numVertexBufferOffset);
+	HRESULT CompileShaderFromFile(WCHAR *szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob **ppBlobOut);
+	HRESULT InitDevice();
+	HRESULT InitShadersAndInputLayout();
+	HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow);
+	Material InitMaterial(Vector3 ambient, Vector3 diffuse, Vector3 specular, float specularPower);
+	void InitGameObject(GameObject *obj, Vector3 pos, Vector3 scale, Vector3 rotation);
+	void Release();
 
-		ID3D11Buffer* _pVertexBuffer;
-		ID3D11Buffer* _pIndexBuffer;
+	HINSTANCE _hInst;
+	HWND _hWnd;
+	D3D_DRIVER_TYPE _driverType = D3D_DRIVER_TYPE_NULL;
+	D3D_FEATURE_LEVEL _featureLevel = D3D_FEATURE_LEVEL_11_0;
+	ID3D11Device *_pd3dDevice = nullptr;
+	ID3D11DeviceContext *_pImmediateContext = nullptr;
+	IDXGISwapChain *_pSwapChain = nullptr;
+	ID3D11RenderTargetView *_pRenderTargetView = nullptr;
+	ID3D11VertexShader *_pVertexShader = nullptr;
+	ID3D11PixelShader *_pPixelShader = nullptr;
+	ID3D11InputLayout *_pVertexLayout = nullptr;
 
-		ID3D11Buffer* _pConstantBuffer;
+	ID3D11Buffer *_pVertexBuffer = nullptr;
+	ID3D11Buffer *_pIndexBuffer = nullptr;
 
-		Light _basicLight;
+	ID3D11Buffer *_pConstantBuffer = nullptr;
 
-		vector<GameObject*> _gameObjects;
+	Light _basicLight;
 
-		Camera* _pCamera;
-		float _cameraOrbitRadius = 7.0f;
-		float _cameraOrbitRadiusMin = 2.0f;
-		float _cameraOrbitRadiusMax = 50.0f;
-		float _cameraOrbitAngleXZ = -90.0f;
-		float _cameraSpeed = 2.0f;
+	vector<GameObject *> _gameObjects;
 
-		MeshData _objGround;
-		MeshData _objSkyBox;
-		MeshData _objCar;
+	Camera *_pCamera;
+	float _cameraOrbitRadius = 7.0f;
+	float _cameraOrbitRadiusMin = 2.0f;
+	float _cameraOrbitRadiusMax = 50.0f;
+	float _cameraOrbitAngleXZ = -90.0f;
+	float _cameraSpeed = 2.0f;
 
-		ID3D11DepthStencilView* _pDepthStencilView;
-		ID3D11Texture2D* _pDepthStencilBuffer;
+	MeshData _objGround;
+	MeshData _objSkyBox;
+	MeshData _objCar;
 
-		ID3D11RasterizerState* _pWireFrame;
-		ID3D11RasterizerState* _pSolidObject;
-		bool _isWireframe;
-		bool _isTransparent;
-		int _selectedObject;
+	ID3D11DepthStencilView *_pDepthStencilView = nullptr;
+	ID3D11Texture2D *_pDepthStencilBuffer = nullptr;
 
-		ID3D11SamplerState* _pSamplerLinear = nullptr;
+	ID3D11RasterizerState *_pWireFrame = nullptr;
+	ID3D11RasterizerState *_pSolidObject = nullptr;
+	bool _isWireframe = false;
+	bool _isTransparent = false;
+	int _selectedObject = 1;
 
-		ID3D11ShaderResourceView* _pTextureSkyBoxRV = nullptr;
-		ID3D11ShaderResourceView* _pTextureCarRV = nullptr;
-		ID3D11ShaderResourceView* _pTextureCarSpecularRV = nullptr;
-		ID3D11ShaderResourceView* _pTextureGroundRV = nullptr;
-		ID3D11ShaderResourceView* _pTextureGroundSpecularRV = nullptr;
+	ID3D11SamplerState *_pSamplerLinear = nullptr;
 
-		D3D11_RASTERIZER_DESC wfdesc;
+	ID3D11ShaderResourceView *_pTextureSkyBoxRV = nullptr;
+	ID3D11ShaderResourceView *_pTextureCarRV = nullptr;
+	ID3D11ShaderResourceView *_pTextureCarSpecularRV = nullptr;
+	ID3D11ShaderResourceView *_pTextureGroundRV = nullptr;
+	ID3D11ShaderResourceView *_pTextureGroundSpecularRV = nullptr;
 
-		XMFLOAT3 _lightDirection;
-		XMFLOAT4 _diffuseMaterial;
-		XMFLOAT4 _diffuseLight;
-		XMFLOAT4 _ambientMaterial;
-		XMFLOAT4 _ambientLight;
-		XMFLOAT4 _specularMaterial;
-		XMFLOAT4 _specularLight;
-		XMFLOAT3 _eyePosW;
-		float _specularPower;
+	D3D11_RASTERIZER_DESC wfdesc;
 
-		ID3D11BlendState* _pTransparency;
+	XMFLOAT3 _lightDirection;
+	XMFLOAT4 _diffuseMaterial;
+	XMFLOAT4 _diffuseLight;
+	XMFLOAT4 _ambientMaterial;
+	XMFLOAT4 _ambientLight;
+	XMFLOAT4 _specularMaterial;
+	XMFLOAT4 _specularLight;
+	XMFLOAT3 _eyePosW;
+	float _specularPower;
 
-		HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow);
-		HRESULT InitDevice();
-		void Cleanup();
-		HRESULT CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
-		HRESULT InitShadersAndInputLayout();
-		Geometry InitGeometry(ID3D11Buffer* indexBuffer, ID3D11Buffer* vertexBuffer, int numIndices, int numVertexBufferOffset);
-		Material InitMaterial(Vector3 ambient, Vector3 diffuse, Vector3 specular, float specularPower);
-		void InitGameObject(GameObject* obj, Vector3 pos, Vector3 scale, Vector3 rotation);
-		
-		UINT _WindowHeight;
-		UINT _WindowWidth;
+	ID3D11BlendState *_pTransparency = nullptr;
 
-		UINT _renderHeight = 1080;
-		UINT _renderWidth = 1920;
+	UINT _WindowHeight;
+	UINT _WindowWidth;
+
+	UINT _renderHeight = 1080;
+	UINT _renderWidth = 1920;
 };
-

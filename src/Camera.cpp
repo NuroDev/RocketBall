@@ -1,15 +1,5 @@
 #include "Camera.h"
 
-Camera::Camera(Vector3 position, Vector3 at, Vector3 up, FLOAT windowWidth, FLOAT windowHeight, FLOAT nearDepth, FLOAT farDepth) : _eye(position), _at(at), _up(up), _windowWidth(windowWidth), _windowHeight(windowHeight), _nearDepth(nearDepth), _farDepth(farDepth)
-{
-	Update();
-}
-
-Camera::~Camera()
-{
-
-}
-
 void Camera::Update()
 {
 	XMFLOAT4 eye = XMFLOAT4(_eye.x, _eye.y, _eye.z, 1.0f);

@@ -2,41 +2,40 @@
 
 #include <directxmath.h>
 #include <string>
-#include "lib\Vector3.h"
-#include "lib\ParticleModel.h"
-#include "lib\Appearance.h"
+
+#include "Appearance.h"
+#include "ParticleModel.h"
+#include "util/Vector3.h"
 
 using namespace DirectX;
 using namespace std;
 
 class GameObject
 {
-	public:
-		GameObject(string type, Appearance& appearance, bool isLaminar, float radius);
-		~GameObject();
+public:
+	GameObject(string type, Appearance &appearance, bool isLaminar, float radius);
+	~GameObject();
 
-		string GetType() const { return _type; }
+	void Update(float deltaTime);
+	void Draw(ID3D11DeviceContext *pContext);
 
-		Appearance& GetAppearance() const { return _rAppearance; }
-		Transform* GetTransform() const { return _pTransform; }
-		ParticleModel* GetParticleModel() const { return _pParticleModel; }
+	string GetType() const { return _type; }
 
-		XMMATRIX GetWorldMatrix() const { return XMLoadFloat4x4(&_world); }
+	Appearance &GetAppearance() const { return _rAppearance; }
+	Transform *GetTransform() const { return _pTransform; }
+	ParticleModel *GetParticleModel() const { return _pParticleModel; }
 
-		void SetParent(GameObject* parent) { _pParent = parent; }
+	XMMATRIX GetWorldMatrix() const { return XMLoadFloat4x4(&_world); }
 
-		void Update(float deltaTime);
-		void Draw(ID3D11DeviceContext* pImmediateContext);
+	void SetParent(GameObject *parent) { _pParent = parent; }
 
-	private:
-		string _type;
+private:
+	string _type;
 
-		XMFLOAT4X4 _world;
+	XMFLOAT4X4 _world;
 
-		Appearance& _rAppearance;
-		Transform* _pTransform;
-		ParticleModel* _pParticleModel;
-
-		GameObject* _pParent;
+	Appearance &_rAppearance;
+	GameObject *_pParent = nullptr;
+	ParticleModel *_pParticleModel = nullptr;
+	Transform *_pTransform = nullptr;
 };
-

@@ -1,6 +1,7 @@
 #include "ParticleModel.h"
 
-ParticleModel::ParticleModel(Transform* transform, float mass, float gravity, float dragForce, bool isLaminar, float radius) : _pTransform(transform), _mass(mass), _gravity(gravity), _dragForce(dragForce), _isLaminar(isLaminar), _radius(radius)
+ParticleModel::ParticleModel(Transform *transform, float mass, float gravity, float dragForce, bool isLaminar, float radius)
+	: _pTransform(transform), _mass(mass), _gravity(gravity), _dragForce(dragForce), _isLaminar(isLaminar), _radius(radius)
 {
 	_weight = _mass * _gravity;
 	_netForce.x = 0.0f;
@@ -10,7 +11,8 @@ ParticleModel::ParticleModel(Transform* transform, float mass, float gravity, fl
 
 ParticleModel::~ParticleModel()
 {
-
+	if (_pTransform)
+		_pTransform = nullptr;
 }
 
 void ParticleModel::MoveConstVel(float deltaTime)
@@ -50,38 +52,6 @@ void ParticleModel::Update(float deltaTime)
 	Move(deltaTime);
 }
 
-void ParticleModel::UpdateNetForce(Vector3 force)
-{
-	_netForce.x += force.x;
-	_netForce.y += force.y;
-	_netForce.z += force.z;
-}
-
-void ParticleModel::MotionInFluid(float deltaTime)
-{
-	DragForce(_velocity, _dragForce);
-	Update(deltaTime);
-	Move(deltaTime);
-}
-
-void ParticleModel::DragForce(Vector3 v, float dragForce)
-{
-	if (_isLaminar == true)
-	{
-		DragLamFlow(v, dragForce);
-	}
-	else {
-		DragTurbFlow(v, dragForce);
-	}
-}
-
-void ParticleModel::DragLamFlow(Vector3 v, float dragForce)
-{
-	_drag.x -= dragForce * v.x;
-	_drag.y -= dragForce * v.y;
-	_drag.z -= dragForce * v.z;
-}
-
 void ParticleModel::DragTurbFlow(Vector3 v, float dragForce)
 {
 	float velMag = v.GetMagnitude();
@@ -92,13 +62,6 @@ void ParticleModel::DragTurbFlow(Vector3 v, float dragForce)
 	_drag.x -= dragMag * unitVel.x;
 	_drag.y -= dragMag * unitVel.y;
 	_drag.z -= dragMag * unitVel.z;
-}
-
-void ParticleModel::UpdateAccel()
-{
-	_acceleration.x = _netForce.x / _mass;
-	_acceleration.y = _netForce.y / _mass;
-	_acceleration.z = _netForce.z / _mass;
 }
 
 void ParticleModel::Move(float deltaTime)
@@ -135,9 +98,7 @@ bool ParticleModel::CollisionCheck(Vector3 pos, float radius)
 	float totalDistance = distance.GetMagnitude();
 
 	if (totalDistance < totalRadius)
-	{
 		return true;
-	}
 
 	return false;
 }

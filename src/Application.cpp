@@ -2,25 +2,25 @@
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    PAINTSTRUCT ps;
-    HDC hdc;
+	PAINTSTRUCT ps;
+	HDC hdc;
 
-    switch (message)
-    {
-        case WM_PAINT:
-            hdc = BeginPaint(hWnd, &ps);
-            EndPaint(hWnd, &ps);
-            break;
+	switch (message)
+	{
+	case WM_PAINT:
+		hdc = BeginPaint(hWnd, &ps);
+		EndPaint(hWnd, &ps);
+		break;
 
-        case WM_DESTROY:
-            PostQuitMessage(0);
-            break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
 
-        default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
-    }
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
 
-    return 0;
+	return 0;
 }
 
 bool Application::HandleKeyboard(MSG msg)
@@ -29,25 +29,29 @@ bool Application::HandleKeyboard(MSG msg)
 
 	switch (msg.wParam)
 	{
-		case VK_UP:
-			_cameraOrbitRadius = max(_cameraOrbitRadiusMin, _cameraOrbitRadius - (_cameraSpeed * 0.2f));
-			return true;
-			break;
+	case VK_UP:
+		_cameraOrbitRadius = max(_cameraOrbitRadiusMin, _cameraOrbitRadius - (_cameraSpeed * 0.2f));
+		return true;
+		break;
 
-		case VK_DOWN:
-			_cameraOrbitRadius = min(_cameraOrbitRadiusMax, _cameraOrbitRadius + (_cameraSpeed * 0.2f));
-			return true;
-			break;
+	case VK_DOWN:
+		_cameraOrbitRadius = min(_cameraOrbitRadiusMax, _cameraOrbitRadius + (_cameraSpeed * 0.2f));
+		return true;
+		break;
 
-		case VK_RIGHT:
-			_cameraOrbitAngleXZ -= _cameraSpeed;
-			return true;
-			break;
+	case VK_RIGHT:
+		_cameraOrbitAngleXZ -= _cameraSpeed;
+		return true;
+		break;
 
-		case VK_LEFT:
-			_cameraOrbitAngleXZ += _cameraSpeed;
-			return true;
-			break;
+	case VK_LEFT:
+		_cameraOrbitAngleXZ += _cameraSpeed;
+		return true;
+		break;
+
+	case VK_ESCAPE:
+		exit(0);
+		break;
 	}
 
 	return false;
@@ -55,24 +59,6 @@ bool Application::HandleKeyboard(MSG msg)
 
 Application::Application()
 {
-	_hInst = nullptr;
-	_hWnd = nullptr;
-	_driverType = D3D_DRIVER_TYPE_NULL;
-	_featureLevel = D3D_FEATURE_LEVEL_11_0;
-	_pd3dDevice = nullptr;
-	_pImmediateContext = nullptr;
-	_pSwapChain = nullptr;
-	_pRenderTargetView = nullptr;
-	_pVertexShader = nullptr;
-	_pPixelShader = nullptr;
-	_pVertexLayout = nullptr;
-	_pVertexBuffer = nullptr;
-	_pIndexBuffer = nullptr;
-	_pConstantBuffer = nullptr;
-	_isWireframe = false;
-	_isTransparent = false;
-	_selectedObject = 1;
-
 	_lightDirection = XMFLOAT3(0.0f, 0.0f, -1.0f);
 	_diffuseMaterial = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	_diffuseLight = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -83,117 +69,103 @@ Application::Application()
 	_specularPower = float(15.0f);
 }
 
-Application::~Application()
-{
-	Cleanup();
-}
-
 HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 {
-    if (FAILED(InitWindow(hInstance, nCmdShow)))
+	HRESULT hr;
+
+	hr = InitWindow(hInstance, nCmdShow);
+	if (FAILED(hr))
+		return hr;
+
+	RECT rc;
+	GetClientRect(_hWnd, &rc);
+	_WindowWidth = rc.right - rc.left;
+	_WindowHeight = rc.bottom - rc.top;
+
+	hr = InitDevice();
+	if (FAILED(hr))
 	{
-        return E_FAIL;
+		Release();
+		return hr;
 	}
-
-    RECT rc;
-    GetClientRect(_hWnd, &rc);
-    _WindowWidth = rc.right - rc.left;
-    _WindowHeight = rc.bottom - rc.top;
-
-    if (FAILED(InitDevice()))
-    {
-        Cleanup();
-        return E_FAIL;
-    }
 
 	// Load models
-	{
-		_objGround = OBJLoader::Load("assets/models/Ground.obj", _pd3dDevice, false);
-		_objSkyBox = OBJLoader::Load("assets/models/Skybox.obj", _pd3dDevice);
-		_objCar = OBJLoader::Load("assets/models/Car.obj", _pd3dDevice);
-	}
+	_objGround = OBJLoader::Load("assets/models/Ground.obj", _pd3dDevice, false);
+	_objSkyBox = OBJLoader::Load("assets/models/Skybox.obj", _pd3dDevice);
+	_objCar = OBJLoader::Load("assets/models/Car.obj", _pd3dDevice);
 
 	// Load textures
-	{
-		CreateDDSTextureFromFile(_pd3dDevice, L"assets/textures/Skybox_COLOR.dds", nullptr, &_pTextureSkyBoxRV);
-		CreateDDSTextureFromFile(_pd3dDevice, L"assets/textures/Car.dds", nullptr, &_pTextureCarRV);
-		CreateDDSTextureFromFile(_pd3dDevice, L"assets/textures/Car.dds", nullptr, &_pTextureCarSpecularRV);
-		CreateDDSTextureFromFile(_pd3dDevice, L"assets/textures/asphalt_COLOR.dds", nullptr, &_pTextureGroundRV);
-		CreateDDSTextureFromFile(_pd3dDevice, L"assets/textures/asphalt_SPEC.dds", nullptr, &_pTextureGroundSpecularRV);
-	}
+	CreateDDSTextureFromFile(_pd3dDevice, L"assets/textures/Skybox_COLOR.dds", nullptr, &_pTextureSkyBoxRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"assets/textures/Car.dds", nullptr, &_pTextureCarRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"assets/textures/Car.dds", nullptr, &_pTextureCarSpecularRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"assets/textures/asphalt_COLOR.dds", nullptr, &_pTextureGroundRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"assets/textures/asphalt_SPEC.dds", nullptr, &_pTextureGroundSpecularRV);
 
 	// Initialize lighting
-	{
-		_basicLight.AmbientLight = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-		_basicLight.DiffuseLight = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		_basicLight.SpecularLight = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
-		_basicLight.SpecularPower = 20.0f;
-		_basicLight.LightVecW = Vector3(0.0f, 1.0f, -1.0f);
-	}
+	_basicLight.AmbientLight = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	_basicLight.DiffuseLight = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	_basicLight.SpecularLight = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
+	_basicLight.SpecularPower = 20.0f;
+	_basicLight.LightVecW = Vector3(0.0f, 1.0f, -1.0f);
 
 	// Initialize camera
-	{
-		Vector3 eye = Vector3(0.0f, 2.0f, -1.0f);
-		Vector3 at = Vector3(0.0f, 2.0f, 0.0f);
-		Vector3 up = Vector3(0.0f, 1.0f, 0.0f);
+	Vector3 eye = Vector3(0.0f, 2.0f, -10.0f);
+	Vector3 at = Vector3(0.0f, 2.0f, 0.0f);
+	Vector3 up = Vector3(0.0f, 1.0f, 0.0f);
 
-		_pCamera = new Camera(eye, at, up, (float)_renderWidth, (float)_renderHeight, 0.01f, 200.0f);
-	}
+	_pCamera = new Camera(eye, at, up, (float)_renderWidth, (float)_renderHeight, 0.01f, 200.0f);
 
 	// Initialize gameobjects(geometry, materials, gameObjects)
-	{
-		Material shinyMaterial = InitMaterial(Vector3(0.3f, 0.3f, 0.3f), Vector3(1.0f, 1.0f, 1.0f), Vector3(0.5f, 0.5f, 0.5f), 10.0f);
-		Material matteMaterial = InitMaterial(Vector3(0.1f, 0.1f, 0.1f), Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), 0.0f);
-		
-		// Ground plane object
-		Geometry planeGeometry = InitGeometry(_objGround.IndexBuffer, _objGround.VertexBuffer, _objGround.IndexCount, _objGround.VBOffset);
-		Appearance* pFloorAppearance = new Appearance(planeGeometry, matteMaterial);
-		pFloorAppearance->SetTextureRV(_pTextureGroundRV);
-		pFloorAppearance->SetSpecularRV(_pTextureGroundSpecularRV);
-		GameObject* pFloorGameObject = new GameObject("Floor", *pFloorAppearance, true, 1.0f);
-		InitGameObject(pFloorGameObject, Vector3(0.0f, 0.0f, 0.0f), Vector3(5.0f, 5.0f, 5.0f), Vector3(0.0f, 0.0f, 0.0f));
+	Material shinyMaterial = InitMaterial(Vector3(0.3f, 0.3f, 0.3f), Vector3(1.0f, 1.0f, 1.0f), Vector3(0.5f, 0.5f, 0.5f), 10.0f);
+	Material matteMaterial = InitMaterial(Vector3(0.1f, 0.1f, 0.1f), Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), 0.0f);
 
-		// Car object
-		Geometry carGeometry = InitGeometry(_objCar.IndexBuffer, _objCar.VertexBuffer, _objCar.IndexCount, _objCar.VBOffset);
-		Appearance* pCarAppearance = new Appearance(carGeometry, shinyMaterial);
-		pCarAppearance->SetTextureRV(_pTextureCarRV);
-		pCarAppearance->SetSpecularRV(_pTextureCarSpecularRV);
-		GameObject* pCarGameObject = new GameObject("Car", *pCarAppearance, true, 1.0f);
-		InitGameObject(pCarGameObject, Vector3(0.0f, 7.5f, 10.0f), Vector3(0.5f, 0.5f, 0.5f), Vector3(0.0f, 0.0f, 0.0f));
+	// Ground plane object
+	Geometry planeGeometry = InitGeometry(_objGround.IndexBuffer, _objGround.VertexBuffer, _objGround.IndexCount, _objGround.VBOffset);
+	Appearance *pFloorAppearance = new Appearance(planeGeometry, matteMaterial);
+	pFloorAppearance->SetTextureRV(_pTextureGroundRV);
+	pFloorAppearance->SetSpecularRV(_pTextureGroundSpecularRV);
+	GameObject *pFloorGameObject = new GameObject("Floor", *pFloorAppearance, true, 1.0f);
+	InitGameObject(pFloorGameObject, Vector3(0.0f, 0.0f, 0.0f), Vector3(5.0f, 5.0f, 5.0f), Vector3(0.0f, 0.0f, 0.0f));
 
-		pCarGameObject->GetParticleModel()->SetMass(50.0f);
-		pCarGameObject->GetParticleModel()->SetGravity(12.0f);
+	// Car object
+	Geometry carGeometry = InitGeometry(_objCar.IndexBuffer, _objCar.VertexBuffer, _objCar.IndexCount, _objCar.VBOffset);
+	Appearance *pCarAppearance = new Appearance(carGeometry, shinyMaterial);
+	pCarAppearance->SetTextureRV(_pTextureCarRV);
+	pCarAppearance->SetSpecularRV(_pTextureCarSpecularRV);
+	GameObject *pCarGameObject = new GameObject("Car", *pCarAppearance, true, 1.0f);
+	InitGameObject(pCarGameObject, Vector3(0.0f, 7.5f, 10.0f), Vector3(0.5f, 0.5f, 0.5f), Vector3(0.0f, 135.0f, 0.0f));
 
-		// Sphere object
-		Geometry sphereGeometry = InitGeometry(_objSkyBox.IndexBuffer, _objSkyBox.VertexBuffer, _objSkyBox.IndexCount, _objSkyBox.VBOffset);
-		Appearance* pSphereAppearance = new Appearance(sphereGeometry, shinyMaterial);
-		pSphereAppearance->SetTextureRV(_pTextureSkyBoxRV);
-		GameObject* pSphereGameObject = new GameObject("Sphere", *pSphereAppearance, false, 1.0f);
-		InitGameObject(pSphereGameObject, Vector3(-3.0f, 5.0f, 0.0f), Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f));
+	pCarGameObject->GetParticleModel()->SetMass(50.0f);
+	pCarGameObject->GetParticleModel()->SetGravity(12.0f);
 
-		pSphereGameObject->GetParticleModel()->SetMass(5.0f);
-		pSphereGameObject->GetParticleModel()->SetGravity(5.0f);
-		pSphereGameObject->GetParticleModel()->SetRadius(1.0f);
+	// Sphere object
+	Geometry sphereGeometry = InitGeometry(_objSkyBox.IndexBuffer, _objSkyBox.VertexBuffer, _objSkyBox.IndexCount, _objSkyBox.VBOffset);
+	Appearance *pSphereAppearance = new Appearance(sphereGeometry, shinyMaterial);
+	pSphereAppearance->SetTextureRV(_pTextureSkyBoxRV);
+	GameObject *pSphereGameObject = new GameObject("Sphere", *pSphereAppearance, false, 1.0f);
+	InitGameObject(pSphereGameObject, Vector3(-3.0f, 5.0f, 0.0f), Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f));
 
-		// Moon Sphere object
-		Geometry moonSphereGeometry = InitGeometry(_objSkyBox.IndexBuffer, _objSkyBox.VertexBuffer, _objSkyBox.IndexCount, _objSkyBox.VBOffset);
-		Appearance* pMoonSphereAppearance = new Appearance(moonSphereGeometry, shinyMaterial);
-		pMoonSphereAppearance->SetTextureRV(_pTextureSkyBoxRV);
-		GameObject* pMoonSphereGameObject = new GameObject("MoonSphere", *pMoonSphereAppearance, false, 1.0f);
-		InitGameObject(pMoonSphereGameObject, Vector3(3.0f, 10.0f, 0.0f), Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f));
+	pSphereGameObject->GetParticleModel()->SetMass(5.0f);
+	pSphereGameObject->GetParticleModel()->SetGravity(5.0f);
+	pSphereGameObject->GetParticleModel()->SetRadius(1.0f);
 
-		pSphereGameObject->GetParticleModel()->SetMass(50.0f);
-		pSphereGameObject->GetParticleModel()->SetGravity(0.0f);
-		pSphereGameObject->GetParticleModel()->SetRadius(1.0f);
-	}
+	// Moon Sphere object
+	Geometry moonSphereGeometry = InitGeometry(_objSkyBox.IndexBuffer, _objSkyBox.VertexBuffer, _objSkyBox.IndexCount, _objSkyBox.VBOffset);
+	Appearance *pMoonSphereAppearance = new Appearance(moonSphereGeometry, shinyMaterial);
+	pMoonSphereAppearance->SetTextureRV(_pTextureSkyBoxRV);
+	GameObject *pMoonSphereGameObject = new GameObject("MoonSphere", *pMoonSphereAppearance, false, 1.0f);
+	InitGameObject(pMoonSphereGameObject, Vector3(3.0f, 10.0f, 0.0f), Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f));
 
-	return S_OK;
+	pSphereGameObject->GetParticleModel()->SetMass(50.0f);
+	pSphereGameObject->GetParticleModel()->SetGravity(0.0f);
+	pSphereGameObject->GetParticleModel()->SetRadius(1.0f);
+
+	return hr;
 }
 
-Geometry Application::InitGeometry(ID3D11Buffer* indexBuffer, ID3D11Buffer* vertexBuffer, int numIndices, int numVertexBufferOffset)
+Geometry Application::InitGeometry(ID3D11Buffer *indexBuffer, ID3D11Buffer *vertexBuffer, int numIndices, int numVertexBufferOffset)
 {
 	Geometry geometry;
-
 	geometry.pIndexBuffer = indexBuffer;
 	geometry.pVertexBuffer = vertexBuffer;
 	geometry.numberOfIndices = numIndices;
@@ -206,7 +178,6 @@ Geometry Application::InitGeometry(ID3D11Buffer* indexBuffer, ID3D11Buffer* vert
 Material Application::InitMaterial(Vector3 ambient, Vector3 diffuse, Vector3 specular, float specularPower)
 {
 	Material material;
-
 	material.ambient = XMFLOAT4(ambient.x, ambient.y, ambient.z, 1.0f);
 	material.diffuse = XMFLOAT4(diffuse.x, diffuse.y, diffuse.z, 1.0f);
 	material.specular = XMFLOAT4(specular.x, specular.y, specular.z, 1.0f);
@@ -215,7 +186,7 @@ Material Application::InitMaterial(Vector3 ambient, Vector3 diffuse, Vector3 spe
 	return material;
 }
 
-void Application::InitGameObject(GameObject* obj, Vector3 pos, Vector3 scale, Vector3 rotation)
+void Application::InitGameObject(GameObject *obj, Vector3 pos, Vector3 scale, Vector3 rotation)
 {
 	obj->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
 	obj->GetTransform()->SetScale(scale.x, scale.y, scale.z);
@@ -227,227 +198,198 @@ void Application::InitGameObject(GameObject* obj, Vector3 pos, Vector3 scale, Ve
 HRESULT Application::InitShadersAndInputLayout()
 {
 	HRESULT hr;
-	ID3DBlob* pVSBlob = nullptr;
-	ID3DBlob* pPSBlob = nullptr;
 
-    // Compile/Create the vertex shader
+	ID3DBlob *pVSBlob = nullptr;
+	ID3DBlob *pPSBlob = nullptr;
+
+	// Compile/Create the vertex shader
+	hr = CompileShaderFromFile(L"RocketBall.fx", "VS", "vs_4_0", &pVSBlob);
+	if (FAILED(hr))
 	{
-		hr = CompileShaderFromFile(L"RocketBall.fx", "VS", "vs_4_0", &pVSBlob);
+		MessageBox(nullptr, L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
 
-		if (FAILED(hr))
-		{
-			MessageBox(nullptr,
-				L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-			return hr;
-		}
-
-		hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pVertexShader);
-
-		if (FAILED(hr))
-		{
-			pVSBlob->Release();
-			return hr;
-		}
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pVertexShader);
+	if (FAILED(hr))
+	{
+		pVSBlob->Release();
+		return hr;
 	}
 
 	// Compile/Create the pixel shader
+	hr = CompileShaderFromFile(L"RocketBall.fx", "PS", "ps_4_0", &pPSBlob);
+	if (FAILED(hr))
 	{
-		hr = CompileShaderFromFile(L"RocketBall.fx", "PS", "ps_4_0", &pPSBlob);
-
-		if (FAILED(hr))
-		{
-			MessageBox(nullptr, L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-			return hr;
-		}
-
-		// Create the pixel shader
-		hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pPixelShader);
-		pPSBlob->Release();
-
-		if (FAILED(hr))
-		{
-			return hr;
-		}
+		MessageBox(nullptr, L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
 	}
 
-    // Define the input layout
-    D3D11_INPUT_ELEMENT_DESC layout[] =
-    {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};	
+	// Create the pixel shader
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pPixelShader);
+	pPSBlob->Release();
+	if (FAILED(hr))
+	{
+		pPSBlob->Release();
+		return hr;
+	}
+
+	// Define the input layout
+	D3D11_INPUT_ELEMENT_DESC layout[] = {
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
+	};
 
 	UINT numElements = ARRAYSIZE(layout);
 
-    // Create/set the input layout
+	// Create/set the input layout
+	hr = _pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &_pVertexLayout);
+	if (FAILED(hr))
 	{
-		hr = _pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &_pVertexLayout);
 		pVSBlob->Release();
-
-		if (FAILED(hr))
-		{
-			return hr;
-		}
-
-		_pImmediateContext->IASetInputLayout(_pVertexLayout);
+		return hr;
 	}
+
+	_pImmediateContext->IASetInputLayout(_pVertexLayout);
 
 	return hr;
 }
 
 HRESULT Application::InitWindow(HINSTANCE hInstance, int nCmdShow)
 {
-    // Register class
-	{
-		WNDCLASSEX wcex;
-		wcex.cbSize = sizeof(WNDCLASSEX);
-		wcex.style = CS_HREDRAW | CS_VREDRAW;
-		wcex.lpfnWndProc = WndProc;
-		wcex.cbClsExtra = 0;
-		wcex.cbWndExtra = 0;
-		wcex.hInstance = hInstance;
-		wcex.hIcon = LoadIcon(hInstance, (LPCTSTR)IDI_TUTORIAL1);
-		wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-		wcex.lpszMenuName = nullptr;
-		wcex.lpszClassName = L"TutorialWindowClass";
-		wcex.hIconSm = LoadIcon(wcex.hInstance, (LPCTSTR)IDI_TUTORIAL1);
-		if (!RegisterClassEx(&wcex))
-		{
-			return E_FAIL;
-		}
-	}
+	HRESULT hr;
 
-    // Create window
-	{
-		_hInst = hInstance;
-		RECT rc = { 0, 0, 1280, 720 };
-		AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-		_hWnd = CreateWindow(L"TutorialWindowClass", L"Rocket Ball", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance, nullptr);
+	// Register class
+	WNDCLASSEX wcex;
+	wcex.cbSize = sizeof(WNDCLASSEX);
+	wcex.style = CS_HREDRAW | CS_VREDRAW;
+	wcex.lpfnWndProc = WndProc;
+	wcex.cbClsExtra = 0;
+	wcex.cbWndExtra = 0;
+	wcex.hInstance = hInstance;
+	wcex.hIcon = LoadIcon(hInstance, (LPCTSTR)IDI_TUTORIAL1);
+	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.lpszMenuName = nullptr;
+	wcex.lpszClassName = L"RocketBallClass";
+	wcex.hIconSm = LoadIcon(wcex.hInstance, (LPCTSTR)IDI_TUTORIAL1);
 
-		if (!_hWnd)
-		{
-			return E_FAIL;
-		}
+	hr = !RegisterClassEx(&wcex);
+	if (FAILED(hr))
+		return hr;
 
-		ShowWindow(_hWnd, nCmdShow);
-	}
+	// Create window
+	_hInst = hInstance;
+	RECT rc = {0, 0, 1280, 720};
+	AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+	_hWnd = CreateWindow(L"RocketBallClass", L"Rocket Ball", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance, nullptr);
 
-    return S_OK;
+	hr = !_hWnd;
+	if (FAILED(hr))
+		return hr;
+
+	ShowWindow(_hWnd, nCmdShow);
+
+	return hr;
 }
 
-HRESULT Application::CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
+HRESULT Application::CompileShaderFromFile(WCHAR *szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob **ppBlobOut)
 {
-    HRESULT hr = S_OK;
+	HRESULT hr;
 
-    DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+	DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 
-	#if defined(DEBUG) || defined(_DEBUG)
-		// Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
-		// Setting this flag improves the shader debugging experience, but still allows 
-		// the shaders to be optimized and to run exactly the way they will run in 
-		// the release configuration of this program.
-		dwShaderFlags |= D3DCOMPILE_DEBUG;
-	#endif
+#if defined(DEBUG) || defined(_DEBUG)
+	// Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
+	// Setting this flag improves the shader debugging experience, but still allows
+	// the shaders to be optimized and to run exactly the way they will run in
+	// the release configuration of this program.
+	dwShaderFlags |= D3DCOMPILE_DEBUG;
+#endif
 
-    ID3DBlob* pErrorBlob;
-    hr = D3DCompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel, dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
-
-    if (FAILED(hr))
-    {
+	ID3DBlob *pErrorBlob;
+	hr = D3DCompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel, dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
+	if (FAILED(hr))
+	{
 		if (pErrorBlob != nullptr)
-		{
-			OutputDebugStringA((char*)pErrorBlob->GetBufferPointer());
-		}
+			OutputDebugStringA((char *)pErrorBlob->GetBufferPointer());
 
 		if (pErrorBlob)
-		{
 			pErrorBlob->Release();
-		}
 
-        return hr;
-    }
+		return hr;
+	}
 
-    if (pErrorBlob) pErrorBlob->Release();
+	if (pErrorBlob)
+		pErrorBlob->Release();
 
-    return S_OK;
+	return hr;
 }
 
 HRESULT Application::InitDevice()
 {
-    HRESULT hr = S_OK;
+	HRESULT hr;
 
-    UINT createDeviceFlags = 0;
+	UINT createDeviceFlags = 0;
 
-	#ifdef _DEBUG
-		createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-	#endif
+#ifdef _DEBUG
+	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
-    D3D_DRIVER_TYPE driverTypes[] =
-    {
-        D3D_DRIVER_TYPE_HARDWARE,
-        D3D_DRIVER_TYPE_WARP,
-        D3D_DRIVER_TYPE_REFERENCE,
-    };
+	D3D_DRIVER_TYPE driverTypes[] = {
+		D3D_DRIVER_TYPE_HARDWARE,
+		D3D_DRIVER_TYPE_WARP,
+		D3D_DRIVER_TYPE_REFERENCE,
+	};
 
-    UINT numDriverTypes = ARRAYSIZE(driverTypes);
+	UINT numDriverTypes = ARRAYSIZE(driverTypes);
 
-    D3D_FEATURE_LEVEL featureLevels[] =
-    {
-        D3D_FEATURE_LEVEL_11_0,
-        D3D_FEATURE_LEVEL_10_1,
-        D3D_FEATURE_LEVEL_10_0,
-    };
+	D3D_FEATURE_LEVEL featureLevels[] = {
+		D3D_FEATURE_LEVEL_11_0,
+		D3D_FEATURE_LEVEL_10_1,
+		D3D_FEATURE_LEVEL_10_0,
+	};
 
 	UINT numFeatureLevels = ARRAYSIZE(featureLevels);
 
-    DXGI_SWAP_CHAIN_DESC sd;
-    ZeroMemory(&sd, sizeof(sd));
-    sd.BufferCount = 1;
-    sd.BufferDesc.Width = _WindowWidth;
-    sd.BufferDesc.Height = _WindowHeight;
-    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    sd.BufferDesc.RefreshRate.Numerator = 60;
-    sd.BufferDesc.RefreshRate.Denominator = 1;
-    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    sd.OutputWindow = _hWnd;
-    sd.SampleDesc.Count = 1;
-    sd.SampleDesc.Quality = 0;
-    sd.Windowed = TRUE;
+	DXGI_SWAP_CHAIN_DESC sd;
+	ZeroMemory(&sd, sizeof(sd));
+	sd.BufferCount = 1;
+	sd.BufferDesc.Width = _WindowWidth;
+	sd.BufferDesc.Height = _WindowHeight;
+	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	sd.BufferDesc.RefreshRate.Numerator = 60;
+	sd.BufferDesc.RefreshRate.Denominator = 1;
+	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	sd.OutputWindow = _hWnd;
+	sd.SampleDesc.Count = 1;
+	sd.SampleDesc.Quality = 0;
+	sd.Windowed = TRUE;
 
-    for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
-    {
-        _driverType = driverTypes[driverTypeIndex];
-        hr = D3D11CreateDeviceAndSwapChain(nullptr, _driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels, D3D11_SDK_VERSION, &sd, &_pSwapChain, &_pd3dDevice, &_featureLevel, &_pImmediateContext);
+	for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
+	{
+		_driverType = driverTypes[driverTypeIndex];
+		hr = D3D11CreateDeviceAndSwapChain(nullptr, _driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels, D3D11_SDK_VERSION, &sd, &_pSwapChain, &_pd3dDevice, &_featureLevel, &_pImmediateContext);
 		if (SUCCEEDED(hr))
-		{
 			break;
-		}
-    }
-
-    if (FAILED(hr))
-        return hr;
-
-    // Create a render target view
-    ID3D11Texture2D* pBackBuffer = nullptr;
-    hr = _pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-
-	if (FAILED(hr))
-	{
-		return hr;
 	}
 
-    hr = _pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &_pRenderTargetView);
-    pBackBuffer->Release();
-
 	if (FAILED(hr))
-	{
 		return hr;
-	}
+
+	// Create a render target view
+	ID3D11Texture2D *pBackBuffer = nullptr;
+	hr = _pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID *)&pBackBuffer);
+	if (FAILED(hr))
+		return hr;
+
+	hr = _pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &_pRenderTargetView);
+	pBackBuffer->Release();
+	if (FAILED(hr))
+		return hr;
 
 	D3D11_TEXTURE2D_DESC depthStencilDesc;
-
 	depthStencilDesc.Width = _WindowWidth;
 	depthStencilDesc.Height = _WindowHeight;
 	depthStencilDesc.MipLevels = 1;
@@ -463,7 +405,7 @@ HRESULT Application::InitDevice()
 	_pd3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &_pDepthStencilBuffer);
 	_pd3dDevice->CreateDepthStencilView(_pDepthStencilBuffer, nullptr, &_pDepthStencilView);
 
-    _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _pDepthStencilView);
+	_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _pDepthStencilView);
 
 	// Set vertex buffer
 	UINT stride = sizeof(SimpleVertex);
@@ -473,20 +415,20 @@ HRESULT Application::InitDevice()
 	// Set index buffer
 	_pImmediateContext->IASetIndexBuffer(_pIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
-    // Setup the viewport
-    D3D11_VIEWPORT vp;
-    vp.Width = (FLOAT)_WindowWidth;
-    vp.Height = (FLOAT)_WindowHeight;
-    vp.MinDepth = 0.0f;
-    vp.MaxDepth = 1.0f;
-    vp.TopLeftX = 0;
-    vp.TopLeftY = 0;
-    _pImmediateContext->RSSetViewports(1, &vp);
+	// Setup the viewport
+	D3D11_VIEWPORT vp;
+	vp.Width = (FLOAT)_WindowWidth;
+	vp.Height = (FLOAT)_WindowHeight;
+	vp.MinDepth = 0.0f;
+	vp.MaxDepth = 1.0f;
+	vp.TopLeftX = 0;
+	vp.TopLeftY = 0;
+	_pImmediateContext->RSSetViewports(1, &vp);
 
 	InitShadersAndInputLayout();
 
-    // Set primitive topology
-    _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	// Set primitive topology
+	_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Create the constant buffer
 	D3D11_BUFFER_DESC bd;
@@ -495,7 +437,7 @@ HRESULT Application::InitDevice()
 	bd.ByteWidth = sizeof(ConstantBuffer);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
-    hr = _pd3dDevice->CreateBuffer(&bd, nullptr, &_pConstantBuffer);
+	hr = _pd3dDevice->CreateBuffer(&bd, nullptr, &_pConstantBuffer);
 
 	ZeroMemory(&wfdesc, sizeof(D3D11_RASTERIZER_DESC));
 	wfdesc.FillMode = D3D11_FILL_WIREFRAME;
@@ -505,10 +447,10 @@ HRESULT Application::InitDevice()
 	ZeroMemory(&wfdesc, sizeof(D3D11_RASTERIZER_DESC));
 	wfdesc.FillMode = D3D11_FILL_SOLID;
 	wfdesc.CullMode = D3D11_CULL_BACK;
-	hr = _pd3dDevice->CreateRasterizerState(&wfdesc, &_pSolidObject);
 
-    if (FAILED(hr))
-        return hr;
+	hr = _pd3dDevice->CreateRasterizerState(&wfdesc, &_pSolidObject);
+	if (FAILED(hr))
+		return hr;
 
 	// Create the sample state
 	D3D11_SAMPLER_DESC sampDesc;
@@ -543,37 +485,59 @@ HRESULT Application::InitDevice()
 
 	_pd3dDevice->CreateBlendState(&blendDesc, &_pTransparency);
 
-    return S_OK;
+	return hr;
 }
 
-void Application::Cleanup()
+void Application::Release()
 {
-	if (_pd3dDevice) _pd3dDevice->Release();
-	if (_pDepthStencilView) _pDepthStencilView->Release();
-	if (_pDepthStencilBuffer) _pDepthStencilBuffer->Release();
-    if (_pImmediateContext) _pImmediateContext->ClearState();
-	if (_pImmediateContext) _pImmediateContext->Release();
+	if (_pd3dDevice)
+		_pd3dDevice->Release();
+	if (_pDepthStencilView)
+		_pDepthStencilView->Release();
+	if (_pDepthStencilBuffer)
+		_pDepthStencilBuffer->Release();
+	if (_pImmediateContext)
+		_pImmediateContext->ClearState();
+	if (_pImmediateContext)
+		_pImmediateContext->Release();
 
-    if (_pVertexBuffer) _pVertexBuffer->Release();
-	if (_pIndexBuffer) _pIndexBuffer->Release();
-	if (_pVertexLayout) _pVertexLayout->Release();
-	if (_pVertexShader) _pVertexShader->Release();
-	if (_pPixelShader) _pPixelShader->Release();
-    
-	if (_pSamplerLinear) _pSamplerLinear->Release();
-	if (_pConstantBuffer) _pConstantBuffer->Release();
-    if (_pRenderTargetView) _pRenderTargetView->Release();
-    if (_pSwapChain) _pSwapChain->Release();
+	if (_pVertexBuffer)
+		_pVertexBuffer->Release();
+	if (_pIndexBuffer)
+		_pIndexBuffer->Release();
+	if (_pVertexLayout)
+		_pVertexLayout->Release();
+	if (_pVertexShader)
+		_pVertexShader->Release();
+	if (_pPixelShader)
+		_pPixelShader->Release();
 
-	if (_pWireFrame) _pWireFrame->Release();
-	if (_pSolidObject) _pSolidObject->Release();
-	if (_pTransparency) _pTransparency->Release();
+	if (_pSamplerLinear)
+		_pSamplerLinear->Release();
+	if (_pConstantBuffer)
+		_pConstantBuffer->Release();
+	if (_pRenderTargetView)
+		_pRenderTargetView->Release();
+	if (_pSwapChain)
+		_pSwapChain->Release();
 
-	if (_pTextureCarRV) _pTextureCarRV->Release();
-	if (_pTextureCarSpecularRV) _pTextureCarSpecularRV->Release();
-	if (_pTextureGroundRV) _pTextureGroundRV->Release();
-	if (_pTextureGroundSpecularRV) _pTextureGroundSpecularRV->Release();
-	if (_pTextureSkyBoxRV) _pTextureSkyBoxRV->Release();
+	if (_pWireFrame)
+		_pWireFrame->Release();
+	if (_pSolidObject)
+		_pSolidObject->Release();
+	if (_pTransparency)
+		_pTransparency->Release();
+
+	if (_pTextureCarRV)
+		_pTextureCarRV->Release();
+	if (_pTextureCarSpecularRV)
+		_pTextureCarSpecularRV->Release();
+	if (_pTextureGroundRV)
+		_pTextureGroundRV->Release();
+	if (_pTextureGroundSpecularRV)
+		_pTextureGroundSpecularRV->Release();
+	if (_pTextureSkyBoxRV)
+		_pTextureSkyBoxRV->Release();
 
 	if (_pCamera)
 	{
@@ -594,136 +558,111 @@ void Application::Cleanup()
 void Application::Update()
 {
 	// Set delta time to 1/60(fps)
-	float deltaTime = 0.01667f;
+	float deltaTime = 0.01666666666f;
 
-	// Update time 
-	{
-		static float timeSinceStart = 0.0f;
-		static DWORD dwTimeStart = 0;
+	// Update time
+	static float timeSinceStart = 0.0f;
+	static DWORD dwTimeStart = 0;
 
-		DWORD dwTimeCur = GetTickCount();
+	DWORD dwTimeCur = GetTickCount();
 
-		if (dwTimeStart == 0)
-		{
-			dwTimeStart = dwTimeCur;
-		}
+	if (dwTimeStart == 0)
+		dwTimeStart = dwTimeCur;
 
-		timeSinceStart = (dwTimeCur - dwTimeStart) / 1000.0f;
-	}
+	timeSinceStart = (dwTimeCur - dwTimeStart) / 1000.0f;
 
 	// Keyboard controls
+
+	// Switch to object 1(car)
+	if (GetAsyncKeyState('1'))
+		_selectedObject = 1;
+
+	// Switch to object 2(left sphere)
+	if (GetAsyncKeyState('2'))
+		_selectedObject = 2;
+
+	// Switch to object 3(right sphere)
+	if (GetAsyncKeyState('3'))
+		_selectedObject = 3;
+
+	// WASD: Move Up
+	if (GetAsyncKeyState('W'))
+		_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(0.0f, 0.0f, 20.0f));
+
+	// WASD: Move Left
+	if (GetAsyncKeyState('A'))
+		_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(-20.0f, 0.0f, 0.0f));
+
+	// WASD: Move Down
+	if (GetAsyncKeyState('S'))
+		_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(0.0f, 0.0f, -20.0f));
+
+	// WASD: Move Right
+	if (GetAsyncKeyState('D'))
+		_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(20.0f, 0.0f, 0.0f));
+
+	// Space: Jump
+	if (GetAsyncKeyState(' '))
+		_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(0.0f, 20.0f, 0.0f));
+
+	// T: Toggle transparency
+	if (GetAsyncKeyState('T'))
 	{
-		// Switch to object 1(car)
-		if (GetAsyncKeyState('1'))
+		_isTransparent = !_isTransparent;
+		Sleep(120);
+	}
+
+	// Y: Toggle Wireframe
+	if (GetAsyncKeyState('Y'))
+	{
+		_isWireframe = !_isWireframe;
+		Sleep(120);
+	}
+
+	for (int i = 1; i < _gameObjects.size(); i++)
+	{
+		// Q: Stop moving
+		if (GetAsyncKeyState('Q'))
 		{
-			_selectedObject = 1;
+			_gameObjects[i]->GetParticleModel()->SetVelocity(0.0f, 0.0f, 0.0f);
+			_gameObjects[i]->GetParticleModel()->SetAcceleration(0.0f, 0.0f, 0.0f);
+			_gameObjects[i]->GetTransform()->SetPosition(_gameObjects[i]->GetTransform()->GetPosition());
 		}
 
-		// Switch to object 2(left sphere)
-		if (GetAsyncKeyState('2'))
+		// R: Reset position to start
+		if (GetAsyncKeyState('R'))
 		{
-			_selectedObject = 2;
-		}
-
-		// Switch to object 3(right sphere)
-		if (GetAsyncKeyState('3'))
-		{
-			_selectedObject = 3;
-		}
-
-		// WASD: Move Up
-		if (GetAsyncKeyState('W'))
-		{
-			_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(0.0f, 0.0f, 20.0f));
-		}
-
-		// WASD: Move Left
-		if (GetAsyncKeyState('A'))
-		{
-			_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(-20.0f, 0.0f, 0.0f));
-		}
-
-		// WASD: Move Down
-		if (GetAsyncKeyState('S'))
-		{
-			_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(0.0f, 0.0f, -20.0f));
-		}
-
-		// WASD: Move Right
-		if (GetAsyncKeyState('D'))
-		{
-			_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(20.0f, 0.0f, 0.0f));
-		}
-
-		// Space: Jump
-		if (GetAsyncKeyState(' '))
-		{
-			_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(0.0f, 20.0f, 0.0f));
-		}
-
-		// T: Toggle transparency
-		if (GetAsyncKeyState('T'))
-		{
-			_isTransparent = !_isTransparent;
-			Sleep(120);
-		}
-
-		// Y: Toggle Wireframe
-		if (GetAsyncKeyState('Y'))
-		{
-			_isWireframe = !_isWireframe;
-			Sleep(120);
-		}
-
-		for (int i = 1; i < _gameObjects.size(); i++)
-		{
-			// Q: Stop moving
-			if (GetAsyncKeyState('Q'))
-			{
-				_gameObjects[i]->GetParticleModel()->SetVelocity(0.0f, 0.0f, 0.0f);
-				_gameObjects[i]->GetParticleModel()->SetAcceleration(0.0f, 0.0f, 0.0f);
-				_gameObjects[i]->GetTransform()->SetPosition(_gameObjects[i]->GetTransform()->GetPosition());
-			}
-
-			// R: Reset position to start
-			if (GetAsyncKeyState('R'))
-			{
-				_gameObjects[i]->GetParticleModel()->SetVelocity(0.0f, 0.0f, 0.0f);
-				_gameObjects[i]->GetParticleModel()->SetAcceleration(0.0f, 0.0f, 0.0f);
-				_gameObjects[i]->GetTransform()->SetPosition(-5.0f + (i * 4), 7.5f, 10.0f);
-			}
+			_gameObjects[i]->GetParticleModel()->SetVelocity(0.0f, 0.0f, 0.0f);
+			_gameObjects[i]->GetParticleModel()->SetAcceleration(0.0f, 0.0f, 0.0f);
+			_gameObjects[i]->GetTransform()->SetPosition(-5.0f + (i * 4), 7.5f, 10.0f);
 		}
 	}
 
 	// Update camera
-	{
-		float angleAroundZ = XMConvertToRadians(_cameraOrbitAngleXZ);
+	float angleAroundZ = XMConvertToRadians(_cameraOrbitAngleXZ);
 
-		float camX = _cameraOrbitRadius * cos(angleAroundZ);
-		float camZ = _cameraOrbitRadius * sin(angleAroundZ);
+	float camX = _cameraOrbitRadius * cos(angleAroundZ);
+	float camZ = _cameraOrbitRadius * sin(angleAroundZ);
 
-		Vector3 cameraPos = _pCamera->GetPosition();
-		cameraPos.x = camX;
-		cameraPos.z = camZ;
+	Vector3 cameraPos = _pCamera->GetPosition();
+	cameraPos.x = camX;
+	cameraPos.z = camZ;
 
-		_pCamera->SetPosition(cameraPos);
-		_pCamera->Update();
-	}
+	_pCamera->SetPosition(cameraPos);
+	_pCamera->Update();
 
 	// Update objects
+	for (GameObject *i : _gameObjects)
 	{
-		for (GameObject* i : _gameObjects)
-		{
-			i->Update(deltaTime);
+		i->Update(deltaTime);
 
-			for (GameObject* j : _gameObjects)
+		for (GameObject *j : _gameObjects)
+		{
+			if (i != j)
 			{
-				if (i != j)
+				if (i->GetParticleModel()->CollisionCheck(j->GetTransform()->GetPosition(), j->GetParticleModel()->GetRadius()))
 				{
-					if (i->GetParticleModel()->CollisionCheck(j->GetTransform()->GetPosition(), j->GetParticleModel()->GetRadius()))
-					{
-						i->GetParticleModel()->SetVelocity(-(i->GetParticleModel()->GetVelocity().x), -(i->GetParticleModel()->GetVelocity().y), -(i->GetParticleModel()->GetVelocity().z));
-					}
+					i->GetParticleModel()->SetVelocity(-(i->GetParticleModel()->GetVelocity().x), -(i->GetParticleModel()->GetVelocity().y), -(i->GetParticleModel()->GetVelocity().z));
 				}
 			}
 		}
@@ -739,64 +678,52 @@ void Application::Draw()
 	ConstantBuffer cb;
 
 	// Draw clear buffer
-	{
-		float ClearColor[4] = { 0.125f, 0.125f, 0.125f, 1.0f };
-		_pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
-		_pImmediateContext->ClearDepthStencilView(_pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-	}
+	float ClearColor[4] = {0.125f, 0.125f, 0.125f, 1.0f};
+	_pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
+	_pImmediateContext->ClearDepthStencilView(_pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	// Draw setup buffer
-	{
-		_pImmediateContext->IASetInputLayout(_pVertexLayout);
+	_pImmediateContext->IASetInputLayout(_pVertexLayout);
 
-		_pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-		_pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
+	_pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+	_pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
 
-		_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
-		_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
-		_pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
-	}
+	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
 
 	// Draw render scene
-	{
-		XMFLOAT4X4 viewAsFloats = _pCamera->GetView();
-		XMFLOAT4X4 projectionAsFloats = _pCamera->GetProjection();
+	XMFLOAT4X4 viewAsFloats = _pCamera->GetView();
+	XMFLOAT4X4 projectionAsFloats = _pCamera->GetProjection();
 
-		XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
-		XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
+	XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
+	XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
 
-		cb.View = XMMatrixTranspose(view);
-		cb.Projection = XMMatrixTranspose(projection);
+	cb.View = XMMatrixTranspose(view);
+	cb.Projection = XMMatrixTranspose(projection);
 
-		cb.light = _basicLight;
-		cb.EyePosW = _pCamera->GetPosition();
-	}
+	cb.light = _basicLight;
+	cb.EyePosW = _pCamera->GetPosition();
 
 	// Initialize Lighting
-	{
-		_pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-		_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
-		_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
-		_pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
-	}
+	_pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
 
-	float blendFactor[] = { 0.75f, 0.75f, 0.75f, 1.0f };
+	float blendFactor[] = {0.75f, 0.75f, 0.75f, 1.0f};
 
 	// Transparency/Wireframe toggle
-	{
-		if (_isWireframe == true)
-		{
-			_pImmediateContext->RSSetState(_pWireFrame);
-		} else {
-			_pImmediateContext->RSSetState(_pSolidObject);
-		}
+	if (_isWireframe == true) {
+		_pImmediateContext->RSSetState(_pWireFrame);
+	} else {
+		_pImmediateContext->RSSetState(_pSolidObject);
+	}
 
-		if (_isTransparent == true)
-		{
-			_pImmediateContext->OMSetBlendState(_pTransparency, blendFactor, 0xffffffff);
-		} else {
-			_pImmediateContext->OMSetBlendState(0, 0, 0xffffffff);
-		}
+	if (_isTransparent == true) {
+		_pImmediateContext->OMSetBlendState(_pTransparency, blendFactor, 0xffffffff);
+	} else {
+		_pImmediateContext->OMSetBlendState(0, 0, 0xffffffff);
 	}
 
 	for (auto gameObject : _gameObjects)
@@ -809,9 +736,8 @@ void Application::Draw()
 
 		cb.World = XMMatrixTranspose(gameObject->GetWorldMatrix());
 
-		if (gameObject->GetAppearance().HasTexture())
-		{
-			ID3D11ShaderResourceView* pTextureRV = gameObject->GetAppearance().GetTextureRV();
+		if (gameObject->GetAppearance().HasTexture()) {
+			ID3D11ShaderResourceView *pTextureRV = gameObject->GetAppearance().GetTextureRV();
 			_pImmediateContext->PSSetShaderResources(0, 1, &pTextureRV);
 			cb.HasTexture = 1.0f;
 		} else {
@@ -823,5 +749,5 @@ void Application::Draw()
 		gameObject->Draw(_pImmediateContext);
 	}
 
-    _pSwapChain->Present(0, 0);
+	_pSwapChain->Present(0, 0);
 }

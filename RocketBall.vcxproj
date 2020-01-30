@@ -31,42 +31,42 @@
     <ProjectGuid>{B8FF81B5-9B26-4931-8353-07795FDC4043}</ProjectGuid>
     <RootNamespace>RocketBall</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|X64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|X64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|X64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
@@ -376,14 +376,12 @@
   <ItemGroup>
     <ClCompile Include="src\GameObject.cpp" />
     <ClCompile Include="src\Application.cpp" />
-    <ClCompile Include="src\lib\Appearance.cpp" />
-    <ClCompile Include="src\lib\Camera.cpp" />
+    <ClCompile Include="src\Appearance.cpp" />
+    <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\lib\DDSTextureLoader.cpp" />
-    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="src\lib\OBJLoader.cpp" />
-    <ClCompile Include="src\lib\ParticleModel.cpp" />
-    <ClCompile Include="src\lib\Transform.cpp" />
-    <ClCompile Include="src\lib\Vector3.cpp" />
+    <ClCompile Include="src\ParticleModel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="RocketBall.fx" />
@@ -391,14 +389,15 @@
   <ItemGroup>
     <ClInclude Include="src\GameObject.h" />
     <ClInclude Include="src\Application.h" />
-    <ClInclude Include="src\lib\Appearance.h" />
-    <ClInclude Include="src\lib\Camera.h" />
+    <ClInclude Include="src\Appearance.h" />
+    <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\lib\DDSTextureLoader.h" />
     <ClInclude Include="src\lib\OBJLoader.h" />
     <CLInclude Include="resource.h" />
-    <ClInclude Include="src\lib\ParticleModel.h" />
-    <ClInclude Include="src\lib\Transform.h" />
-    <ClInclude Include="src\lib\Vector3.h" />
+    <ClInclude Include="src\ParticleModel.h" />
+    <ClInclude Include="src\util\Structures.h" />
+    <ClInclude Include="src\util\Transform.h" />
+    <ClInclude Include="src\util\Vector3.h" />
     <ResourceCompile Include="RocketBall.rc" />
   </ItemGroup>
   <ItemGroup>

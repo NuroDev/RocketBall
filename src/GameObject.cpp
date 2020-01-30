@@ -1,17 +1,28 @@
 #include "GameObject.h"
 
-GameObject::GameObject(string type, Appearance& appearance, bool isLaminar, float radius) : _rAppearance(appearance)
+GameObject::GameObject(string type, Appearance &appearance, bool isLaminar, float radius) : _rAppearance(appearance)
 {
 	_pTransform = new Transform();
 	_pParticleModel = new ParticleModel(_pTransform, 1.0f, 1.0f, 1.0f, isLaminar, radius);
-
-	_pParent = nullptr;
 }
 
 GameObject::~GameObject()
 {
-	delete _pTransform;
-	delete _pParticleModel;
+
+	if (_pTransform) {
+		delete _pTransform;
+		_pTransform = nullptr;
+	}
+
+	if (_pParent) {
+		delete _pParent;
+		_pParent = nullptr;
+	}
+
+	if (_pParticleModel) {
+		delete _pParticleModel;
+		_pParticleModel = nullptr;
+	}
 }
 
 void GameObject::Update(float deltaTime)
@@ -23,14 +34,12 @@ void GameObject::Update(float deltaTime)
 	XMStoreFloat4x4(&_world, scale * rotation * translation);
 
 	if (_pParent != nullptr)
-	{
 		XMStoreFloat4x4(&_world, this->GetWorldMatrix() * _pParent->GetWorldMatrix());
-	}
 
 	_pParticleModel->Update(deltaTime);
 }
 
-void GameObject::Draw(ID3D11DeviceContext* pImmediateContext)
+void GameObject::Draw(ID3D11DeviceContext *pContext)
 {
-	_rAppearance.Draw(pImmediateContext);
+	_rAppearance.Draw(pContext);
 }
