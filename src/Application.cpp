@@ -573,36 +573,26 @@ void Application::Update()
 
 	// Keyboard controls
 
-	// Switch to object 1(car)
+	// Select a game object
 	if (GetAsyncKeyState('1'))
 		_selectedObject = 1;
-
-	// Switch to object 2(left sphere)
 	if (GetAsyncKeyState('2'))
 		_selectedObject = 2;
-
-	// Switch to object 3(right sphere)
 	if (GetAsyncKeyState('3'))
 		_selectedObject = 3;
 
-	// WASD: Move Up
+	// WASD movement
 	if (GetAsyncKeyState('W'))
 		_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(0.0f, 0.0f, 20.0f));
-
-	// WASD: Move Left
 	if (GetAsyncKeyState('A'))
 		_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(-20.0f, 0.0f, 0.0f));
-
-	// WASD: Move Down
 	if (GetAsyncKeyState('S'))
 		_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(0.0f, 0.0f, -20.0f));
-
-	// WASD: Move Right
 	if (GetAsyncKeyState('D'))
 		_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(20.0f, 0.0f, 0.0f));
 
 	// Space: Jump
-	if (GetAsyncKeyState(' '))
+	if (GetAsyncKeyState(VK_SPACE))
 		_gameObjects[_selectedObject]->GetParticleModel()->AddForce(Vector3(0.0f, 20.0f, 0.0f));
 
 	// T: Toggle transparency
@@ -619,8 +609,7 @@ void Application::Update()
 		Sleep(120);
 	}
 
-	for (int i = 1; i < _gameObjects.size(); i++)
-	{
+	for (int i = 1; i < _gameObjects.size(); i++) {
 		// Q: Stop moving
 		if (GetAsyncKeyState('Q'))
 		{
